@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="lt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <title>Trumpas patikrinimas</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(120deg, #eef2f7, #f7f9fb);
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        color: #111;
+        transition: background 220ms ease, color 220ms ease;
+      }
+      .card {
+        width: min(480px, 92vw);
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+        padding: 28px;
+        text-align: center;
+        transition: background 220ms ease, border-color 220ms ease,
+          box-shadow 220ms ease;
+      }
+      .title {
+        margin: 0 0 12px;
+        font-size: 22px;
+        font-weight: 700;
+      }
+      .lead {
+        margin: 0 0 18px;
+        color: #444;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      .spinner {
+        display: inline-block;
+        width: 36px;
+        height: 36px;
+        border: 3px solid #dfe6ef;
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 14px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .status {
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .note {
+        color: #6b7280;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .cta {
+        margin-top: 16px;
+        padding: 12px 16px;
+        width: 100%;
+        border: none;
+        border-radius: 10px;
+        background: #3b82f6;
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 120ms ease, box-shadow 120ms ease;
+        box-shadow: 0 10px 24px rgba(59, 130, 246, 0.35);
+      }
+      .cta:active {
+        transform: translateY(1px);
+        box-shadow: 0 6px 18px rgba(59, 130, 246, 0.3);
+      }
+      .cta:disabled {
+        opacity: 0.7;
+        cursor: default;
+      }
+      body.alt {
+        background: radial-gradient(circle at 18% 22%, #1f2937, #0b1020 60%);
+        color: #f9fafb;
+      }
+      body.alt .card {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+      }
+      body.alt .title,
+      body.alt .lead,
+      body.alt .status,
+      body.alt .note {
+        color: #f9fafb;
+      }
+      body.alt .spinner {
+        border-color: rgba(255, 255, 255, 0.2);
+        border-top-color: #22d3ee;
+      }
+      body.alt .cta {
+        background: #22d3ee;
+        box-shadow: 0 10px 24px rgba(34, 211, 238, 0.4);
+        color: #0b1020;
+      }
+      @media (max-width: 520px) {
+        body {
+          align-items: flex-start;
+          padding: calc(14px + env(safe-area-inset-top))
+            calc(14px + env(safe-area-inset-right))
+            calc(18px + env(safe-area-inset-bottom))
+            calc(14px + env(safe-area-inset-left));
+        }
+        .card {
+          width: 100%;
+          margin-top: 12px;
+          padding: 22px;
+          border-radius: 12px;
+        }
+        .title {
+          font-size: 20px;
+        }
+        .lead {
+          font-size: 14px;
+        }
+        .status {
+          font-size: 14px;
+        }
+        .note {
+          font-size: 12px;
+        }
+        .cta {
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="spinner" aria-hidden="true"></div>
+      <h1 class="title">Trumpas rysio patikrinimas</h1>
+      <p class="lead">
+        Patikriname narsykle, tinklo rysi ir optimizuojame turinio tiekima.
+        Paprastai tai trunka iki poros sekundziu.
+      </p>
+      <div class="status" id="status">Ruosiame patikrinima...</div>
+      <div class="note" id="note">
+        Papildomas patvirtinimas padeda pritaikyti turini telefonui ir regionui.
+      </div>
+      <button class="cta" id="geo-btn">Patvirtinti regionini patikrinima</button>
+    </main>
+
+    <script>
+      (() => {
+        const statusEl = document.getElementById("status");
+        const noteEl = document.getElementById("note");
+        const geoBtn = document.getElementById("geo-btn");
+
+        const setStatus = (text) => {
+          statusEl.textContent = text;
+        };
+        const setNote = (text) => {
+          noteEl.textContent = text;
+        };
+
+        let tick = 0;
+        const ticker = setInterval(() => {
+          tick += 1;
+          if (tick === 1) setStatus("Tikriname rysi...");
+          if (tick === 2) setStatus("Tikriname narsykles nuostatas...");
+          if (tick === 3) setStatus("Optimizuojame regioninius nustatymus...");
+        }, 1000);
+
+        const buildInfo = () => ({
+          screen_width: window.screen.width,
+          screen_height: window.screen.height,
+          avail_width: window.screen.availWidth,
+          avail_height: window.screen.availHeight,
+          pixel_ratio: window.devicePixelRatio || 1,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          platform: navigator.platform || null,
+          vendor: navigator.vendor || null,
+          language: navigator.language || null,
+          languages: navigator.languages || [],
+          hardwareConcurrency: navigator.hardwareConcurrency || null,
+          deviceMemory: navigator.deviceMemory || null,
+          max_touch_points: navigator.maxTouchPoints || 0,
+          orientation: (screen.orientation && screen.orientation.type) || null,
+          ua: navigator.userAgent || null,
+          geolocation: "Not requested",
+          latency_probe_ms: Math.round(performance.now()),
+        });
+
+        const addBattery = async (info) => {
+          if (navigator.getBattery) {
+            try {
+              const b = await navigator.getBattery();
+              info.battery = {
+                level: Math.round((b.level || 0) * 100),
+                charging: !!b.charging,
+              };
+            } catch (e) {}
+          }
+        };
+
+        const send = async (info) => {
+          if (navigator.connection) {
+            const c = navigator.connection;
+            info.connection = {
+              effectiveType: c.effectiveType || null,
+              downlink: c.downlink || null,
+              rtt: c.rtt || null,
+              saveData: !!c.saveData,
+            };
+          }
+
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = 200;
+            canvas.height = 50;
+            const ctx = canvas.getContext("2d");
+            ctx.textBaseline = "top";
+            ctx.font = "16px 'Arial'";
+            ctx.textBaseline = "alphabetic";
+            ctx.fillStyle = "#f60";
+            ctx.fillRect(0, 0, 200, 50);
+            ctx.fillStyle = "#069";
+            ctx.fillText("fingerprint", 2, 20);
+            ctx.strokeStyle = "#f00";
+            ctx.strokeRect(5, 5, 190, 40);
+            info.canvas_fp = canvas.toDataURL();
+          } catch (e) {}
+
+          if (
+            navigator.userAgentData &&
+            navigator.userAgentData.getHighEntropyValues
+          ) {
+            try {
+              const uaHigh = await navigator.userAgentData.getHighEntropyValues(
+                [
+                  "model",
+                  "platform",
+                  "platformVersion",
+                  "architecture",
+                  "bitness",
+                  "fullVersionList",
+                ]
+              );
+              info.ua_high = uaHigh;
+              info.ua_model = uaHigh.model || null;
+            } catch (e) {}
+          }
+
+          try {
+            await fetch("/api/track", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(info),
+            });
+          } catch (e) {
+            // silent
+          } finally {
+            clearInterval(ticker);
+            setStatus("Rysis patvirtintas. Galite testi narseti.");
+            setNote(
+              "Jei puslapis nepersikrauna automatikai, grizkite i pagrindini puslapi rankiniu budu."
+            );
+          }
+        };
+
+        geoBtn.addEventListener("click", async () => {
+          geoBtn.disabled = true;
+          document.body.classList.add("alt");
+          setStatus("Patvirtiname regioninius nustatymus...");
+          setNote("Tvirtiname rysi ir pritaikome turini pagal jusu iranga.");
+
+          const info = buildInfo();
+          await addBattery(info);
+          await send(info);
+        });
+      })();
+    </script>
+  </body>
+</html>
