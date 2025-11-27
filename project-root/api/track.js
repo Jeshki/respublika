@@ -1,8 +1,8 @@
 // api/track.js
 
-// 🔐 TAVO TELEGRAM DUOMENYS
-const TELEGRAM_BOT_TOKEN = "8317265281:AAGMUZ8Tgu6nGPG2S_fUULvPhjfcubvI5js";
-const TELEGRAM_CHAT_ID = "YOUR_CHAT_ID_HERE"; // ← ČIA ĮRAŠYK SAVO CHAT ID (pvz. "512345678")
+// 🔐 TELEGRAM DUOMENYS (nustatyti per aplinkos kintamuosius Vercel aplinkoje)
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 // Paprastas hash, kad gautume device_id (nereikia crypto modulio)
 function simpleHash(str) {
