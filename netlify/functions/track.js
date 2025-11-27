@@ -1,65 +1,53 @@
-// api/track.js
-// Serverless handler for Vercel: collects client info and forwards it to Telegram.
-// Configure the following environment variables in Vercel:
-// TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+// netlify/functions/track.js
+// Netlify Function: collects client info and forwards it to Telegram.
+// Environment variables required: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// Simple hash to avoid pulling in crypto
 function simpleHash(str) {
   str = String(str || "");
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0; // 32-bit int
+    hash |= 0;
   }
   return hash.toString(16);
 }
 
-module.exports = async (req, res) => {
-  res.setHeader("Content-Type", "application/json");
-
-  if (req.method !== "POST") {
-    res.statusCode = 405;
-    return res.end(JSON.stringify({ ok: false, error: "Method not allowed" }));
+exports.handler = async (event) => {
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ ok: false, error: "Method not allowed" }),
+      headers: { "Content-Type": "application/json" },
+    };
   }
 
   try {
-    // ---------- BODY PARSING ----------
-    let body = "";
-    await new Promise((resolve, reject) => {
-      req.on("data", (chunk) => {
-        body += chunk;
-      });
-      req.on("end", resolve);
-      req.on("error", reject);
-    });
-
+    const bodyStr = event.body || "";
     let js = {};
     try {
-      js = body ? JSON.parse(body) : {};
-    } catch (e) {
+      js = bodyStr ? JSON.parse(bodyStr) : {};
+    } catch {
       js = {};
     }
 
-    // ---------- SERVER DATA ----------
     const now = new Date().toISOString();
+    const headers = event.headers || {};
 
     let ipHeader =
-      req.headers["x-forwarded-for"] ||
-      req.headers["x-real-ip"] ||
-      req.socket?.remoteAddress ||
+      headers["x-forwarded-for"] ||
+      headers["x-real-ip"] ||
+      headers["client-ip"] ||
       null;
-
     let ip = Array.isArray(ipHeader) ? ipHeader[0] : ipHeader;
-    if (ip && ip.includes(",")) {
-      ip = ip.split(",")[0].trim();
-    }
+    if (ip && ip.includes(",")) ip = ip.split(",")[0].trim();
 
-    const forwardedIp = req.headers["x-forwarded-for"] || null;
-    const userAgent = req.headers["user-agent"] || "";
-    const langHeader = req.headers["accept-language"] || "";
-    const referer = req.headers["referer"] || "";
+    const forwardedIp = headers["x-forwarded-for"] || null;
+    const userAgent = headers["user-agent"] || "";
+    const langHeader = headers["accept-language"] || "";
+    const referer = headers["referer"] || headers["referrer"] || "";
 
     const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       userAgent
@@ -67,7 +55,6 @@ module.exports = async (req, res) => {
       ? "Yes"
       : "No";
 
-    // ---------- JS DATA ----------
     const screen_w = js.screen_width ?? "N/A";
     const screen_h = js.screen_height ?? "N/A";
     const avail_w = js.avail_width ?? "N/A";
@@ -77,10 +64,8 @@ module.exports = async (req, res) => {
     const timezone_js = js.timezone ?? "N/A";
     const platform_js = js.platform ?? "N/A";
     const vendor_js = js.vendor ?? "N/A";
-
     const lang_js = js.language ?? "N/A";
     const languages_js = js.languages ?? [];
-
     const hw_threads = js.hardwareConcurrency ?? "N/A";
     const device_mem = js.deviceMemory ?? "N/A";
     const max_touch_points = js.max_touch_points ?? "N/A";
@@ -112,12 +97,10 @@ module.exports = async (req, res) => {
         : "N/A";
 
     const ua_model = js.ua_model ?? "N/A";
-
     const languages_str = Array.isArray(languages_js)
       ? languages_js.join(", ")
       : String(languages_js);
 
-    // ---------- DEVICE ID ----------
     const device_id = simpleHash(
       [
         userAgent,
@@ -133,7 +116,6 @@ module.exports = async (req, res) => {
         ? `${device_mem} GB`
         : String(device_mem);
 
-    // ---------- TELEGRAM MESSAGE ----------
     let msg = `New visit\n\n`;
     msg += `Time: ${now}\n\n`;
 
@@ -148,6 +130,9 @@ module.exports = async (req, res) => {
     msg += `- Model (UA hints): ${ua_model}\n`;
     msg += `- CPU cores: ${hw_threads}\n`;
     msg += `- RAM: ${device_mem_str}\n`;
+    msg += `- Touch points: ${max_touch_points}\n`;
+    msg += `- Orientation: ${orientation}\n`;
+    msg += `- Battery: ${battery_level} (Charging: ${battery_charging})\n`;
     msg += `- Device ID: ${device_id}\n\n`;
 
     msg += `Network:\n`;
@@ -175,22 +160,20 @@ module.exports = async (req, res) => {
 
     msg += `User-Agent:\n${userAgent}\n`;
     if (ua_js) msg += `UA (JS): ${ua_js}\n`;
-    msg += `Touch points: ${max_touch_points}\n`;
-    msg += `Orientation: ${orientation}\n`;
-    msg += `Battery: ${battery_level} (Charging: ${battery_charging})\n`;
     msg += `Referer: ${referer || "N/A"}`;
 
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
       const missing = [];
       if (!TELEGRAM_BOT_TOKEN) missing.push("TELEGRAM_BOT_TOKEN");
       if (!TELEGRAM_CHAT_ID) missing.push("TELEGRAM_CHAT_ID");
-      res.statusCode = 500;
-      return res.end(
-        JSON.stringify({
+      return {
+        statusCode: 500,
+        body: JSON.stringify({
           ok: false,
           error: `Missing env vars: ${missing.join(", ")}`,
-        })
-      );
+        }),
+        headers: { "Content-Type": "application/json" },
+      };
     }
 
     const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
@@ -203,7 +186,6 @@ module.exports = async (req, res) => {
           text: msg,
         }),
       });
-
       if (!tgRes.ok) {
         const bodyText = await tgRes.text();
         console.error("Telegram response error:", tgRes.status, bodyText);
@@ -212,11 +194,17 @@ module.exports = async (req, res) => {
       console.error("Telegram fetch error:", e);
     }
 
-    res.statusCode = 200;
-    return res.end(JSON.stringify({ ok: true }));
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ ok: true }),
+      headers: { "Content-Type": "application/json" },
+    };
   } catch (err) {
     console.error("Server error:", err);
-    res.statusCode = 500;
-    return res.end(JSON.stringify({ ok: false, error: "Server error" }));
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ ok: false, error: "Server error" }),
+      headers: { "Content-Type": "application/json" },
+    };
   }
 };

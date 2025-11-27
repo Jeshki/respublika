@@ -2,10 +2,10 @@
   "name": "vercel-tracker",
   "version": "1.0.0",
   "description": "Device tracker API for Vercel",
-  "main": "api/track.js",
+  "main": "netlify/functions/track.js",
   "type": "commonjs",
   "scripts": {
-    "start": "vercel dev"
+    "start": "netlify dev"
   },
   "dependencies": {},
   "license": "MIT"

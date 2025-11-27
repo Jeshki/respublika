@@ -261,7 +261,7 @@
           }
 
           try {
-            await fetch("/api/track", {
+            await fetch("/.netlify/functions/track", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(info),
