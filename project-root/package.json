@@ -1,0 +1,12 @@
+{
+  "name": "vercel-tracker",
+  "version": "1.0.0",
+  "description": "Device tracker API for Vercel",
+  "main": "api/track.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {},
+  "license": "MIT"
+}

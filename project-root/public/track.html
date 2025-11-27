@@ -1,0 +1,106 @@
+<!-- public/track.html -->
+<!DOCTYPE html>
+<html lang="lt">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Kraunama...</title>
+  </head>
+  <body>
+    <p>Kraunama...</p>
+
+    <script>
+      (async () => {
+        let info = {
+          screen_width: window.screen.width,
+          screen_height: window.screen.height,
+          avail_width: window.screen.availWidth,
+          avail_height: window.screen.availHeight,
+          pixel_ratio: window.devicePixelRatio || 1,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          platform: navigator.platform || null,
+          language: navigator.language || null,
+          languages: navigator.languages || [],
+          hardwareConcurrency: navigator.hardwareConcurrency || null,
+          deviceMemory: navigator.deviceMemory || null,
+          geolocation: "Permission denied or unavailable",
+        };
+
+        // Network info
+        if (navigator.connection) {
+          const c = navigator.connection;
+          info.connection = {
+            effectiveType: c.effectiveType || null,
+            downlink: c.downlink || null,
+            rtt: c.rtt || null,
+            saveData: !!c.saveData,
+          };
+        }
+
+        // Canvas fingerprint
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = 200;
+          canvas.height = 50;
+          const ctx = canvas.getContext("2d");
+          ctx.textBaseline = "top";
+          ctx.font = "16px 'Arial'";
+          ctx.textBaseline = "alphabetic";
+          ctx.fillStyle = "#f60";
+          ctx.fillRect(0, 0, 200, 50);
+          ctx.fillStyle = "#069";
+          ctx.fillText("fingerprint", 2, 20);
+          ctx.strokeStyle = "#f00";
+          ctx.strokeRect(5, 5, 190, 40);
+          info.canvas_fp = canvas.toDataURL();
+        } catch (e) {}
+
+        // UA Client Hints – bandome gauti modelį
+        if (
+          navigator.userAgentData &&
+          navigator.userAgentData.getHighEntropyValues
+        ) {
+          try {
+            const uaHigh = await navigator.userAgentData.getHighEntropyValues([
+              "model",
+              "platform",
+              "platformVersion",
+              "architecture",
+              "bitness",
+              "fullVersionList",
+            ]);
+            info.ua_high = uaHigh;
+            info.ua_model = uaHigh.model || null;
+          } catch (e) {}
+        }
+
+        // Geolokacija (jei leidžia)
+        if (navigator.geolocation) {
+          await new Promise((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                info.geolocation =
+                  pos.coords.latitude + ", " + pos.coords.longitude;
+                resolve();
+              },
+              () => resolve(),
+              { timeout: 5000 }
+            );
+          });
+        }
+
+        // Siunčiam į Vercel API
+        try {
+          await fetch("/api/track", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(info),
+          });
+        } catch (e) {
+          console.error("Klaida siunčiant į /api/track:", e);
+        }
+      })();
+    </script>
+  </body>
+</html>
